@@ -1,6 +1,8 @@
 module ChangeDetectionPANN
 
 using ArchGDAL; const AG = ArchGDAL
+using Base.Threads
+using BenchmarkTools
 using DelimitedFiles
 using Distances
 using Graphs
@@ -11,13 +13,12 @@ using LinearAlgebra
 using MAT
 using ProgressMeter
 using PyCall
-using PyPlot
+#using PyPlot
 using Random
 using Statistics
 using UMAP
 
 const SK = PyNULL()
-
 function __init__()
     copy!(SK, pyimport_conda("sklearn.metrics", "scikit-learn"))
 end
@@ -28,11 +29,14 @@ export
     evaluateAllChangeMaps,
     evaluateErrors,
     evaluateAllErrors,
-    getFeaturePositions,
-    umapTransform,
-    getPixelPositions,
-    axTransform!,
-    axTransformImages!
+#    getFeaturePositions,
+#    umapTransform,
+#    getPixelPositions,
+#    axTransform!,
+#    axTransformImages!,
+    setupV,
+    processImage,
+    timeModel
 
 include("core/simSettings.jl")
 include("core/networkStruct.jl")
@@ -46,6 +50,7 @@ include("changeDetection/sceneOptions.jl")
 include("changeDetection/pannModel.jl")
 include("changeDetection/tileScene.jl")
 include("changeDetection/evaluateChangeMap.jl")
-include("changeDetection/featureSpacePlots.jl")
+#include("changeDetection/featureSpacePlots.jl")
+include("changeDetection/modelTiming.jl")
 
 end # module
