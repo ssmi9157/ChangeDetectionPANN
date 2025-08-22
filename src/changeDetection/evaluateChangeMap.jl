@@ -41,7 +41,8 @@ end
 
 """
     evaluateChangeMaps(expName::String, eventPath::String; 
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
 
 Returns the AUPRC for the natural disaster category given by 'eventPath'.
 
@@ -51,12 +52,14 @@ Returns the AUPRC for the natural disaster category given by 'eventPath'.
 - 'verbose': Determines if the auprc should be printed for the individual 
   natural disasters.
 - 'tileSz': The size of the tile used to create the change maps.
+- 'changeFolder': Name of the folder that contains the change mask.
 """
 function evaluateChangeMaps(expName::String, eventPath::String; 
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
 
     locations = readdir(eventPath)
-    locationPaths = [joinpath(eventPath, loc, "changes") for loc in locations]
+    locationPaths = [joinpath(eventPath, loc, changeFolder) for loc in locations]
 
     totalChanges = []
     totalTargets = []
@@ -89,8 +92,9 @@ function evaluateChangeMaps(expName::String, eventPath::String;
 end
 
 """
-    evaluateALLChangeMaps(expName::String, basePath::String; 
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+    evaluateAllChangeMaps(expName::String, basePath::String; 
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
 
 Returns the AUPRC for each natural disaster category.
 
@@ -101,21 +105,24 @@ Returns the AUPRC for each natural disaster category.
 - 'verbose': Determines if the auprc should be printed for the individual 
   natural disasters.
 - 'tileSz': The size of the tile used to create the change maps.
+- 'changeFolder': Name of the folder that contains the change mask.
 """
 function evaluateAllChangeMaps(expName::String, basePath::String;
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
     events = readdir(basePath)
     eventPaths = [joinpath(basePath, e) for e in events]
     for (e,eventPath) in enumerate(eventPaths)
         auprc = evaluateChangeMaps(expName, eventPath, verbose=verbose,
-                                   tileSz=tileSz)
+                                   tileSz=tileSz, changeFolder=changeFolder)
 	println("AUPRC for event $(events[e]): $auprc\n")
     end
 end
 
 """
-function evaluateErrors(expNames::Vector{String}, eventPath::String;
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}= (32,32))
+    evaluateErrors(expNames::Vector{String}, eventPath::String;
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}= (32,32),
+                       changeFolder::String="changes")
 
 Returns the mean AUPRC for each experiment and the SEM for a single natural 
 disaster category.
@@ -126,12 +133,14 @@ disaster category.
 - 'verbose': Determines if the auprc should be printed for the individual 
   natural disasters.
 - 'tileSz': The size of the tile used to create the change maps.
+- 'changeFolder': Name of the folder that contains the change mask.
 """
 function evaluateErrors(expNames::Vector{String}, eventPath::String;
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
 
     locations = readdir(eventPath)
-    locationPaths = [joinpath(eventPath, loc, "changes") for loc in locations]
+    locationPaths = [joinpath(eventPath, loc, changeFolder) for loc in locations]
 
     targets = Dict{String, Matrix{Float64}}()
     for (i,loc) in enumerate(locations)
@@ -177,11 +186,12 @@ function evaluateErrors(expNames::Vector{String}, eventPath::String;
 end
 
 """
-function evaluateAllErrors(expNames::Vector{String}, basePath::String;
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+    evaluateAllErrors(expNames::Vector{String}, basePath::String;
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
 
-Returns the mean AUPRC for each experiment and the SEM for natural disaster 
-category.
+Returns the mean AUPRC for each experiment and the SEM for each natural 
+disaster category.
 
 # Arguments
 - 'expNames': The list of experiment names.
@@ -190,14 +200,16 @@ category.
 - 'verbose': Determines if the auprc should be printed for the individual 
   natural disasters.
 - 'tileSz': The size of the tile used to create the change maps.
+- 'changeFolder': Name of the folder that contains the change mask.
 """
 function evaluateAllErrors(expNames::Vector{String}, basePath::String;
-                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32))
+                       verbose::Bool=false, tileSz::Tuple{Int, Int}=(32,32),
+                       changeFolder::String="changes")
     events = readdir(basePath)
     eventPaths = [joinpath(basePath, e) for e in events]
     for (e,eventPath) in enumerate(eventPaths)
-        result, sem = evaluateChangeMaps(expNames, eventPath, verbose=verbose, 
-                                   tileSz=tileSz)
+        result, sem = evaluateErrors(expNames, eventPath, verbose=verbose, 
+                                   tileSz=tileSz, changeFolder=changeFolder)
 	println("Final AUPRC for event $(events[e]): $result +- $sem\n")
     end
 end

@@ -1,20 +1,21 @@
 """
-    getPathsAndLocations(dataPath::String, seed::Int)
+    getPathsAndLocations(dataPath::String, seed::Int, sensor::String)
 
 Returns the paths to .tif files for all the natural disasters in a random order.
 
 # Arguments
 - 'dataPath': Path to the root directory containing all the data.
 - 'seed': Seed used to randomise the order of the paths.
+- 'sensor': The directory name that contains the data from that sensor.
 """
-function getPathsAndLocations(dataPath::String, seed::Int)
+function getPathsAndLocations(dataPath::String, seed::Int, sensor::String)
     events = readdir(dataPath)
     events = [joinpath(dataPath, e) for e in events]
     paths = []
     locations = []
     for e in events
         location = readdir(e)
-        append!(paths, joinpath(e, loc, "S2") for loc in location)
+        append!(paths, joinpath(e, loc, sensor) for loc in location)
         append!(locations, location)
     end
     Random.seed!(seed)
@@ -89,7 +90,7 @@ end
 """
      runScenes(connectivityFile::String, gridSz::Int, numberOfNodes::Int, 
                numReadoutNodes::Int, name::String, dataPath::String; 
-               tileSz::Tuple{Int, Int}=(32,32), 
+               tileSz::Tuple{Int, Int}=(32,32), sensor::String="S2",
                history::Int=4, saveFiles::Bool=false,
                enableProgBar::Bool=true, distanceMetric=CorrDist(),
                bands::Vector{Int}=[2,3,4,5,6,7,8,9,12,13], seed::Int=1, 
@@ -109,7 +110,7 @@ Runs the desired experiment with the given variables.
 """
 function runScenes(connectivityFile::String, gridSz::Int, numberOfNodes::Int, 
                    numReadoutNodes::Int, name::String, dataPath::String;
-                   tileSz::Tuple{Int, Int}=(32,32), 
+                   tileSz::Tuple{Int, Int}=(32,32), sensor::String="S2",
                    history::Int=4, saveFiles::Bool=false,
                    enableProgBar::Bool=true, distanceMetric=CorrDist(),
                    bands::Vector{Int}=[2,3,4,5,6,7,8,9,12,13], seed::Int=1, 
@@ -124,7 +125,7 @@ function runScenes(connectivityFile::String, gridSz::Int, numberOfNodes::Int,
     dataLoaders = createDataLoaders(bands, minVal, maxVal, history, tileSz, 
                                     poolSz, stride)
 
-    paths, locations = getPathsAndLocations(dataPath, seed)
+    paths, locations = getPathsAndLocations(dataPath, seed, sensor)
 
     so = SceneOptions("", saveFiles, tileSz, history, seed,-1,-1,-1,
                       ["" for i in 1:history+1], (-1,-1))
@@ -133,7 +134,7 @@ function runScenes(connectivityFile::String, gridSz::Int, numberOfNodes::Int,
     outputValues = Dict{Int32, Matrix{Float64}}()
 
     for (path, location) in zip(paths, locations)
-	imgBands = bandSelection(path)
+	imgBands = bandSelection(path, sensor)
         updateLocation!(so, name, location, path)
         changeMap = zeros(so.changeMapSz)
 
@@ -159,9 +160,9 @@ function runScenes(connectivityFile::String, gridSz::Int, numberOfNodes::Int,
               (j <= so.imgHeight - so.tileSz[2]+1)
 
             window = Int32.((j,i,so.tileSz[2],so.tileSz[1]))
-            for b in imgBands
+            Threads.@threads for b in imgBands
                 dataLoaders[b].files .= so.files
-                loadSignals!(dataLoaders[b], window)
+                loadSignals!(dataLoaders[b], window, sensor)
                 simulatePANN!(panns[b], dataLoaders[b].signals, T, dt)
                 outputValues[b] = getReadoutValues(panns[b])
             end

@@ -47,16 +47,15 @@ function createDL(minVal::Real, maxVal::Real, band::Int, tileSz::Tuple{Int,Int},
 end
 
 """
-    processData!(dat, dl::DataLoader)
+    processDataS!(dat, dl::DataLoader)
 
-Returns the normalised data.
+Returns the normalised data for Sentinel-2.
 
 # Arguments
-- 'dat': Matrix of the data to be normalised
+- 'dat': Matrix of the data to be normalised.
 - 'dl': The DataLoader object used to load the data.
 """
-function processData!(dat, dl::DataLoader)
-    # These were found manually
+function processDataS!(dat, dl::DataLoader)
     vals = ((7.3,7.6),  #B1
             (6.9,7.5),  #B2
             (6.5,7.4),  #B3
@@ -77,6 +76,56 @@ function processData!(dat, dl::DataLoader)
                        .*(dl.maxVal-dl.minVal) .+ dl.minVal
 
     return dat
+end
+
+"""
+    processDataL!(dat, dl::DataLoader)
+
+Returns the normalised data for LandSat 8.
+
+# Arguments
+- 'dat': Matrix of the data to be normalised.
+- 'dl': The DataLoader object used to load the data.
+"""
+function processDataL!(dat, dl::DataLoader)
+    # These were found manually
+    vals = (
+            (0.0,0.3),  #B2
+            (0.0,0.3),  #B3
+            (0.0,0.3),  #B4
+            (0.0,0.6),  #B5
+            (0.0,0.5),  #B6
+            (0.0,0.3),  #B7
+            (0.0,0.002),#B9
+            (280,300),  #B10
+            (280,300),  #B11
+           )
+
+    dat[:,:,1] .= ((dat[:,:,1] .- vals[dl.band][1]) ./ 
+                       (vals[dl.band][2] - vals[dl.band][1]))
+                       .*(dl.maxVal-dl.minVal) .+ dl.minVal
+
+    return dat
+end
+
+"""
+    processData!(dat, dl::DataLoader, sensor::String)
+
+Returns the normalised data depending on the snsor code.
+
+# Arguments
+- 'dat': Matrix of the data to be normalised.
+- 'dl': The DataLoader object used to load the data.
+- 'sensor': The code to determine which normalisation values are used.
+"""
+function processData!(dat, dl::DataLoader, sensor::String)
+    if sensor == "S2"
+        return processDataS!(dat, dl)
+    elseif sensor == "L8"
+        return processDataL!(dat, dl)
+    end
+    println("ERROR: unknown sensor mode, please select 'S2' or 'L8'")
+    exit()
 end
 
 """
@@ -111,9 +160,9 @@ fed into the model.
   left corner of the window and the last two points define how far beyond to
   load in the respective direction.
 """
-function loadSignals!(dl::DataLoader, window::NTuple{4,Int32})
+function loadSignals!(dl::DataLoader, window::NTuple{4,Int32}, sensor::String)
     images = [loadTIF!(dl, fi, window) for fi in dl.files]
-    images = [processData!(img, dl) for img in images]
+    images = [processData!(img, dl, sensor) for img in images]
 
     imgs = cat(images..., dims=4)
     imgs = permutedims(imgs, [1,2,4,3])
