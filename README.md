@@ -1,6 +1,6 @@
 # ChangeDetectionPANN
 
-This repository contains the offical code used in the Training-free AI for Earth Observation Change Detection using Physics Aware Neuromorphic Networks as publised in ... 
+This repository contains the offical code used in the Training-free AI for Earth Observation Change Detection using Physics Aware Neuromorphic Networks as publised in [Nature Scientific Reports Paper](https://www.nature.com/articles/s41598-025-19057-9).
 
 ## Training-free AI for Earth Observation Change Detection using Physics Aware Neuromorphic Networks
 
